@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# basic Nagios check script testing whether machine
+# or process restart is necessary
+
+# 0 OK, 1 WARN, 2 CRIT, 3 UNKN
+res=0
+msg="no restart required"
+
+# compare running vs installed kernel versions
+running=`uname -r`
+installed=`freebsd-version -k`
+if [ ! "$running" = "$installed" ] ; then
+    msg="machine restart required (running $running, installed $installed)"
+    res=1
+fi
+
+# check for processes running outdated binaries/shared libraries
+if [ $res -eq 0 ] ; then
+    n=`lsop -h | wc -l`
+    if [ $n -gt 0 ] ; then
+	msg="$n process(es) have to be restarted"
+	res=1
+    fi
+fi
+
+case "$res" in
+    (0)
+	echo "OK: $msg"
+	exit 0
+	;;
+    (1)
+	echo "WARN: $msg"
+	exit 1
+	;;
+    (2)
+	echo "CRIT: $msg"
+	exit 2
+	;;
+    (3)
+	echo "UNKN: $msg"
+	exit 3
+	;;
+esac
