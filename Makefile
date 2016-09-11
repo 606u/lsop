@@ -56,4 +56,10 @@ test4: force
 
 alltests: test1 test2 test3 test4
 
+whitelist: $(PROG)
+	-./$(PROG) -c whitelist.txt
+
+use-whitelist: $(PROG)
+	./$(PROG) -w whitelist.txt
+
 force:
