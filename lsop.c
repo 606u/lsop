@@ -1,3 +1,5 @@
+/* -*- mode: C; eval: (c-set-style "bsd"); -*- */
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/param.h>
@@ -67,8 +69,7 @@ read_whitelist(struct whitelisted_process **head)
 	if (strcmp(wflag, "-")) {
 		fp = fopen(wflag, "r");
 		if (!fp) {
-			fprintf(stderr, "lsop: cannot open file '%s': %s\n",
-				wflag, strerror(errno));
+			warn("cannot open file '%s'", wflag);
 			return -1;
 		}
 	} else {
@@ -92,14 +93,14 @@ read_whitelist(struct whitelisted_process **head)
 				*head = proc;
 				head = &proc->next;
 			} else {
-				fprintf(stderr, "lsop: cannot read '%s': %s\n",
-					wflag, strerror(ENOMEM));
+				warnx("cannot read '%s': %s",
+				      wflag, strerror(ENOMEM));
 				res = -1;
 				break;
 			}
 		} else {
 			if (strlen(p)) {
-				fprintf(stderr, "lsop: cannot read '%s': bad file format\n", wflag);
+				warnx("cannot read '%s': Bad file format", wflag);
 				res = -1;
 			}
 			break;
@@ -201,17 +202,17 @@ injail(void)
 static int
 usage(void)
 {
-	fputs("Lists processes running with outdated binaries or shared libraries\n", stderr);
-	fputs("usage: lsop [ options ]\n", stderr);
-	fputs("where options are:\n", stderr);
-	fputs(" -c path   create whitelist from system state\n", stderr);
-	fputs(" -w path   use existing whitelist\n", stderr);
-	fputs(" -h        omit table header\n", stderr);
-	fputs("\n", stderr);
-	fputs("exit codes:\n", stderr);
-	fprintf(stderr, " %u  no processes need restarting\n", EXIT_SUCCESS);
-	fprintf(stderr, " %u  an error occured\n", EXIT_FAILURE);
-	fprintf(stderr, " %u  one or more processes need restarting\n", EXIT_OUTDATED);
+	puts("Lists processes running with outdated binaries or shared libraries");
+	puts("usage: lsop [ options ]");
+	puts("where options are:");
+	puts(" -c path   create whitelist from system state");
+	puts(" -w path   use existing whitelist");
+	puts(" -h        omit table header");
+	puts("");
+	puts("exit codes:");
+	printf(" %u  no processes need restarting\n", EXIT_SUCCESS);
+	printf(" %u  an error occured\n", EXIT_FAILURE);
+	printf(" %u  one or more processes need restarting\n", EXIT_OUTDATED);
 	return EX_USAGE;
 }
 
@@ -236,15 +237,11 @@ main(int argc, char *argv[])
 		}
 	}
 
-	if (cflag && wflag) {
-		fputs("lsop: -c and -w cannot be applied simultaneously\n", stderr);
-		return 1;
-	}
+	if (cflag && wflag)
+		errx(EX_USAGE, "-c and -w cannot be applied simultaneously");
 
-	if (injail() > 0) {
-		fputs("lsop does not currently work in a jail\n", stderr);
-		return EXIT_FAILURE;
-	}
+	if (injail() > 0)
+		errx(EX_USAGE, "does not currently work in a jail");
 
 	if (wflag) {
 		if (read_whitelist(&wl_proc) == -1) {
@@ -296,7 +293,7 @@ main(int argc, char *argv[])
 				 * when binary have been deleted or
 				 * upgraded, therefore this is not the
 				 * right time to create a whitelist */
-				fprintf(stderr, "lsop: whitelist not created: cannot get process %u path\n", proc->ki_pid);
+				warnx("whitelist not created: cannot get process %u path", proc->ki_pid);
 				if (wl_out && wl_out != stdout) {
 					fclose(wl_out);
 					unlink(cflag);
@@ -322,7 +319,7 @@ main(int argc, char *argv[])
 					if (!wl_out) {
 						wl_out = fopen(cflag, "w");
 						if (!wl_out) {
-							fprintf(stderr, "lsop: cannot create whitelist file '%s': %s\n", cflag, strerror(errno));
+							err(EX_IOERR, "cannot create whitelist file '%s'", cflag);
 							return 1;
 						}
 					}
@@ -351,14 +348,13 @@ main(int argc, char *argv[])
 
 	if (wl_out && wl_out != stdout) {
 		if (fclose(wl_out)) {
-			fprintf(stderr, "lsop: cannot write file '%s': %s\n",
-				cflag, strerror(errno));
+			warn("cannot write file '%s'", cflag);
 		}
 	}
 
 	if (res) {
 		if (cflag)
-			fputs("lsop: be aware, that errors were encountered while creating this whitelist\n", stderr);
+			warnx("be aware, that errors were encountered while creating this whitelist");
 		return EXIT_FAILURE;
 	}
 	if (n)
