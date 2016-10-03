@@ -1,7 +1,7 @@
 
 PROG=	lsop
 MAN=	
-SRCS=	lsop.c
+SRCS=	lsop.c lsop_basic.c lsop_whitelist.c
 
 CFLAGS += -Wall -Wextra
 CFLAGS += -g -O0

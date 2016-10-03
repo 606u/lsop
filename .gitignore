@@ -1,4 +1,5 @@
 lsop
-lsop.o
+*~
+*.o
 test?
 whitelist.txt
