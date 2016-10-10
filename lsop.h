@@ -7,6 +7,21 @@ extern int hflag;
 extern const char *cflag;
 /* load whitelist to suppress some warnings from given path */
 extern const char *wflag;
+/* use a statefile to know which mount point/inode is which file */
+extern const char *sflag;
+/* recurse directories when using statefile */
+extern int rflag;
+/* follow symlinks when scanning directories */
+extern int fflag;
+/* verbosity level */
+extern int vflag;
+
+#define trace(lvl, msg, ...)					\
+	do {							\
+		if (lvl <= vflag) {				\
+			warnx("<%d> " msg, lvl, __VA_ARGS__);	\
+		}						\
+	} while (0)
 
 enum ScanResult {
 	/* no problems found */
@@ -59,5 +74,6 @@ void lsop_print_process_status(struct procstat *procstat,
 /* modes: */
 int lsop_basic(void);
 int lsop_whitelist(void);
+int lsop_stateful(int argc, char *argv[]);
 
 #endif /* LSOP_H defined? */

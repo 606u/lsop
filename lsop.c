@@ -17,6 +17,14 @@ int hflag = 0;
 const char *cflag = 0;
 /* load whitelist to suppress some warnings from given path */
 const char *wflag = 0;
+/* use a statefile to know which mount point/inode is which file */
+const char *sflag = 0;
+/* recurse directories when using statefile */
+int rflag = 0;
+/* follow symlinks when scanning directories */
+int fflag = 0;
+/* verbosity level */
+int vflag = 0;
 
 static const int EXIT_OUTDATED = 2;
 
@@ -182,17 +190,9 @@ injail(void)
 static int
 usage(void)
 {
-	puts("Lists processes running with outdated binaries or shared libraries");
-	puts("usage: lsop [ options ]");
-	puts("where options are:");
-	puts(" -c path   create whitelist from system state");
-	puts(" -w path   use existing whitelist");
-	puts(" -h        omit table header");
-	puts("");
-	puts("exit codes:");
-	printf(" %u  no processes need restarting\n", EXIT_SUCCESS);
-	printf(" %u  an error occured\n", EXIT_FAILURE);
-	printf(" %u  one or more processes need restarting\n", EXIT_OUTDATED);
+	puts("usage: lsop [-hv]");
+	puts("            [-hv] -c|w whitelist");
+	puts("            [-hvrf] -s statefile dir1 [dir2...]");
 	return EX_USAGE;
 }
 
@@ -201,22 +201,36 @@ int
 main(int argc, char *argv[])
 {
 	int opt;
-	while ((opt = getopt(argc, argv, "c:w:h")) != -1) {
+	while ((opt = getopt(argc, argv, "hvc:w:rfs:")) != -1) {
 		switch (opt) {
+		case 'h': hflag = 1; break;
+		case 'v': ++vflag; break;
 		case 'c': cflag = optarg; break;
 		case 'w': wflag = optarg; break;
-		case 'h': hflag = 1; break;
+		case 'r': rflag = 1; break;
+		case 'f': fflag = 1; break;
+		case 's': sflag = optarg; break;
 		default: return usage();
 		}
 	}
 
 	if (cflag && wflag)
 		errx(EX_USAGE, "-c and -w cannot be applied simultaneously");
+	if (cflag && strlen(cflag) > PATH_MAX - 2)
+		errx(EX_USAGE, "whitelist path is too long (-c)");
 
 	if (injail() > 0)
 		errx(EX_USAGE, "does not currently work in a jail");
 
+	if ((rflag || fflag) && !sflag)
+		errx(EX_USAGE, "-r and -f require -s");
+
 	if (cflag || wflag)
 		return lsop_whitelist();
+	if (sflag) {
+		if (strlen(sflag) > PATH_MAX - 2)
+			errx(EX_USAGE, "state file path is too long (-s)");
+		return lsop_stateful(argc - optind, argv + optind);
+	}
 	return lsop_basic();
 }

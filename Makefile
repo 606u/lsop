@@ -1,7 +1,7 @@
 
 PROG=	lsop
 MAN=	
-SRCS=	lsop.c lsop_basic.c lsop_whitelist.c
+SRCS=	lsop.c lsop_basic.c lsop_whitelist.c lsop_stateful.c
 
 CFLAGS += -Wall -Wextra
 CFLAGS += -g -O0
@@ -63,5 +63,8 @@ whitelist: $(PROG)
 
 use-whitelist: $(PROG)
 	./$(PROG) -w whitelist.txt
+
+state: $(PROG)
+	./$(PROG) -s state.txt /bin /usr/bin /usr/local/bin /sbin /usr/sbin /usr/local/sbin /lib /usr/lib /usr/local/lib
 
 force:
